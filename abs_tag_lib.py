@@ -71,3 +71,35 @@ def feature_importance_cluster(clusters,labels,features,max_features = 10):
 
         for feature, score in cluster_features[:max_features]:
             print('    - {} : {:.3f}'.format(feature, score))
+            
+# Create linkage matrix for visualising with scipy dendrogram from sklearn hierarchical model
+#
+# See https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html#sphx-glr-auto-examples-cluster-plot-agglomerative-dendrogram-py
+#
+def linkage_matrix(model):
+
+    n_samples = model.labels_.size
+
+    # size of the cluster at each node in the tree
+    cluster_size = []
+
+    for children in model.children_:
+        
+        size = 0
+        
+        for child in children:
+            if child < n_samples:
+                # if it is a leaf node, only one observation is in the cluster
+                size += 1
+            else:
+                # if it is not a leaf node, we can access the size of its children clusters
+                size += cluster_size[child - n_samples]
+                
+        cluster_size.append(size)
+
+    linkage_matrix = np.column_stack([model.children_,
+                                      model.distances_,
+                                      cluster_size]
+                                    )
+    
+    return linkage_matrix.astype(float)

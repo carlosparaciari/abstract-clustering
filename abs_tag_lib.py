@@ -103,3 +103,36 @@ def linkage_matrix(model):
                                     )
     
     return linkage_matrix.astype(float)
+
+# Maps the words into the text to the corresponding index in the word2vec model
+#
+# NOTE: Since we later pad with 0's, and the index 0 is associated with a particular
+#       word in our w2v model, we shift the index of every word by 1.
+#
+def hashing_trick(text,w2v):
+    return np.array([w2v.vocab[word].index+1 for word in text if word in w2v.vocab])
+
+# Maps each sentence in dataframe into a padded sequence of integer (pad is done with 0)
+def hashed_padded_sequences(df_text,w2v):
+    
+    hashed_text = df_text.apply(hashing_trick,args=(w2v,))
+    
+    max_length = hashed_text.apply(len).max()
+    hashed_padded_text = hashed_text.apply(lambda arr : np.pad(arr,(0,max_length-arr.size)))
+    
+    return hashed_padded_text
+
+# Assign a class based on the probability vector produced by the model
+#
+# NOTE : This functions assumes that the last of the labels is an "unknown label",
+# which is used when the model is uncertain about the class of the paper.
+#
+def predict_with_treshold(X, labels, model, treshold=0.5):
+
+    N,_ = X.shape
+
+    class_probability = model.predict(X)
+    item_to_class = dict(np.argwhere(class_probability > treshold))
+    classification = [item_to_class.get(index,-1) for index in range(N)]
+
+    return labels[classification]
